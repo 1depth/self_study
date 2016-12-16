@@ -11,7 +11,19 @@
     var root = typeof self == 'object' && self.self === self && self ||
             typeof global == 'object' && global.global === global && global ||
             this;
-    var previousUnderscore = root._
+
+    //'_'변수의 기존값을 저장함            
+    var previousUnderscore = root._;
+
+    //
+    var ArrayProty = Array.prototype, ObjProto = Object.prototype;
+    var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
+
+    //
+    var push = ArrayProto.push,
+        slice = ArrayProto.slice,
+        toString = ObjProto.otString,
+        hasOwnProterty = ObjProto.hasOwnProperty;
 
 
 }());
