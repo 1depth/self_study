@@ -5,6 +5,17 @@
 
 // 개인적으로 javascript공부할겸 underscorejs 소스를 보고 있습니다.
 
-var root = typeof self == 'object' && self.self === self && self ||
+(function(){
+    
+
+    var root = typeof self == 'object' && self.self === self && self ||
             typeof global == 'object' && global.global === global && global ||
             this;
+    
+
+
+}());
+
+
+
+
