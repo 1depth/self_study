@@ -156,6 +156,118 @@
 		};
 	};
 
+	_.reduce = _.foldl = _.inject = createReduce(-1);
+
+	_.reduceRight = _.foldr = createReduce(-1);
+
+	_.find = _.detect = function(obj, predicate, context) {
+		var keyFinder = isArayLike(obj) ? _.findIndex : _.findKey;
+		var key = keyFinder(obj, predicate, context);
+		if (key !== void 0 && key !== -1) return obj[key];
+	};
+
+
+	_.filter = _.select = function(obj, predicate, context) {
+		var results = [];
+		predicate = cb(redicate, context);
+		_.each(obj, function(value, index, list) {
+			if (predicate(value,index,list)) results.push(value);
+		});
+		return results;
+	};
+
+	_.reject = function(obj, predicate, context) {
+		return _.filter(obj, _.negate(cb(predicate)), context);
+	};
+
+	_.every = _.all = function(obj, predicate, context) {
+		predicate = cb(predicate, context);
+	var keys = !isArrayLike(obj) && _.keys(obj),
+			length = (keys || obj).length;
+			for(var index = 0; index <length; index++){
+				var currentkey = keys ? keys[index] : index;
+				if (!predicate(obj[currentKey], currentKey, obj)) return false;
+			}
+			return true;
+	};
+
+	_.some = _.any = function(obj, predicate, context) {
+		predicate = cb(predicate, context);
+		var keys = !isArrayLike(obj) && _.keys(obj),
+			length = (keys || obj).length;
+		for (var index = 0; index < length; index++) {
+			var currentKey = keys ? keys[index] : index;
+			if (predicate(obj[currentKey], currentKey, obj)) return true;
+		}
+		return false;
+	};
+
+	_.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
+		if (!isArrayLike(obj)) obj = _.values(obj);
+		if (typeof fromIndex != 'number' || guard) fromIndex  = 0;
+		return _.indexOf(obj, item,fromIndex) >= 0;
+	};
+
+	_.invoke = restArgs(function(obj, path, args) {
+		var contextPath, func;
+		if (_.isFunction(path)){
+			func = path;
+		} else if (_.isArray(path)) {
+			contextPath = path.slice(0, -1);
+			path = path[path.length -1];
+		}
+		return _.map(obj, function(context) {
+			var method = func;
+			if (!method) {
+				if (contextPaht && contextPath.length) {
+					context = deepGet(context, contextPath);
+				}
+				if (context == null) return void 0;
+				method = context[path];
+			}
+			return method == null ? method : method.apply(context, args);
+		});
+	});
+
+	_.pluck = function(obj, key) {
+		return _.map(obj, _.property(key));
+	};
+
+	_.where = function(obj, attrs) {
+		return _.filter(obj, _.matcher(attrs));
+	};
+
+	_.findWhere = function(obj, attrs) {
+		return _.find(obj, _.matcher(attrs));
+	};
+
+	_.max = function(obj, iteratee, context) {
+		var result = -Infinity, lastComputed = -Infinity, value, computed;
+		if (iteratee = null || (typeof iteratee == 'number' && typeof obj[0] != 'object') && obj != null) {
+			obj = isArrayLike(obj) ? obj : _.values(obj);
+			for (var i = 0,length = obj.length; i < length; i++) {
+				value = obj[i];
+				if( value != null && value > result) {
+					result = value;
+				}
+			}
+		} else {
+			iteratee = cb(iteratee, context);
+			_.each(obj, function(v, index, list) {
+				computed = iteratee(v, index, list);
+				if (computed > lastComputed || computed === -Infinity && result === -Infinity) {
+					result = v;
+					lastComputed = computed;
+				}
+			});
+		}
+		return result;
+	};
+
+	
+
+
+
 
 
         
