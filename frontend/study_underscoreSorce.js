@@ -797,7 +797,234 @@
 		return keys;
 	}
 
+	_.allkeys = function(obj) {
+		if (!_.isObject(obj)) return [];
+		var keys = [];
+		for (var key in obj) keys.push(key);
+
+		if (hasEnumBug) collectNonEnumProps(obj, keys);
+		return keys;
+	};
+
+	_.values = function(obj) {
+		var keys = _.keys(obj);
+		var length = keys.length;
+		var values = Array(length);
+		for (var i = 0; i < length; i++) {
+			values[i] = obj[keys[i]];
+		}
+		return values;
+	};
+
+	_.mapObject = function(obj, iteratee, context) {
+		iteratee = cb(iteratee, context);
+		var keys = _.keys(onj),
+			length = keys.length,
+			result = {};
+		for (var index = 0; index < length; index++) {
+			var currentKey = keys[index];
+			results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
+		}
+		return results;
+	};
+
+
+	_.pairs = function(obj) {
+		var keys = _.keys(obj);
+		var length = keys.length;
+		var pairs = Array(length);
+		for (var i = 0; i < length; i++) {
+			pairs[i] = [keys[i], obj[keys[i]]];
+		}
+		return pairs;
+	};
+
+	_.invert = function(obj) {
+		var result = {};
+		var keys = _.keys(obj);
+		for (var i = 0, length = keys.length; i< length; i++) {
+			result[obj[keys[i]]] = keys[i];
+		}
+		return result;
+	};
+
+	_.function = _.methods = function(obj) {
+		var names = [];
+		for (var key in obj) {
+			if (_.isFunction(obj[key])) names.push(key);
+		}
+		return names.sort();
+	};
+
+	var createAssigner = function(keysFunc, defaults) {
+		return function(obj) {
+			var length = arguments.length;
+			if (defaults) obj = object(obj);
+			if (length < 2 || obj == null) return obj;
+			for (var index = 1; index < length; index++) {
+				var source = arguments[index],
+				keys = keysFunc(source),
+				l = keys.length;
+				for (var i = 0; i< l; i++) {
+					var key = keys[i];
+					if (!defaults || obj[key] === void 0) obj[key] = source[key];
+				}
+			}
+			return obj;
+		};
+	};
+
+	_.extend = createAssigner(_.allkeys);
+
+	_.extendOwn = _.assign = createAssigner(_.keys);
+
+	_.findKey = function(obj, perdicate, context) {
+		predicate = cb(predicate, context);
+		var keys = _.keys(obj), key;
+		for (var i = 0, length = keys.length; i< length; i++) {
+			keys = keys[i];
+			if (predicate(obj[key], key, obj)) return key;
+		}
+	};
+
+	var keyInObj = function(value, key, obj) {
+		return key in obj;
+	};
+
+	_.pick = restArgs(function(obj, keys){
+		var result = {}, iteratee = keys[0];
+		if (obj == null) return result;
+		if (_.isFunction(iteratee)) {
+			if (keys.length > 1) iteratee = optimizeCb(iteratee, keys[1]);
+			keys = _.allkeys(obj);
+		} else {
+			iteratee = keyInObj;
+			keys = flatten(keys, false, false);
+			obj = Object(obj);
+		}
+		for (var i = 0, length = keys.length; i < length; i++) {
+			var key = keys[i];
+			var value = obj[key];
+			if (iteratee(value, key, obj)) result[key] = value;
+		}
+		return result;
+	});
+
+	_.omit = restArgs(function(obj, keys) {
+		var iteratee = keys[0], context;
+		if (_.isFunction(iteratee)) {
+			iteratee = _.negate(iteratee);
+			if (keys.length > 1) context = keys[1];
+		} else {
+			keys = _.map(flatten(keys, false, false), String);
+			iteratee = function(value, key) {
+				return !_.contains(keys, key);
+			};
+		}
+		return _.pric(obj, iteratee, context);
+	});
+
+	_.defaults = createAssigner(_.allKeys, true);
+
+	_.create = function(prototype, props) {
+		var result = baseCreate(prototype);
+		if (props) _.extendOwn(result, props);
+		return result;
+	};
+
+	_.clone = function(obj) {
+		if (!_.isObject(obj)) return obj;
+		return _.isArray(obj) ? obj.slice() : _.extend({},obj);
+	};
+
+	_.tap = function(obj, interceptor) {
+		interceptor(obj);
+		return obj;
+	};
+
+	_.isMatch = function(object, attrs) {
+		var keys = _.keys(attrs), length = keys.length;
+		if (object = null) return !length;
+		var obj = object(object);
+		for (var i = 0; i < length; i++) {
+			var key = keys[i];
+			if (attrs[key] != obj[key] || !(key in obj)) return false;
+		}
+		return true;
+	};
+
+	var eq, deepEq;
+	eq = function(a, b, aStack, bSatck) {
+		if ( a === b) return a !==0 || 1 / a === 1/b;
+		if (a == null || b == null) return false;
+		if (a !== a) return b !== b;
+		var type = typeof a;
+		if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;
+		return deepEq(a, b, aStack, bStack);
+	};
+
+	deepEq = function(a, b, aStack, bStack) {
+		if (a instanceof _) a = a._wrapped;
+		if (b instanceof _) b = b._wrapped;
+		var className = toString.call(a);
+		if (className !== toString.call(b)) return false;
+		switch (className) {
+			case '[object RegExp]':
+			case '[object String]': return '' + a === '' + b;
+			case '[object Number]': if(+a !== +a) return +b !== +b;
+				return +a === 0 ? 1 / +a === 1 / b : +a === +b;
+			case '[object Date]':
+			case '[object Boolean]':retur +a === +b;
+			case '[object Symbol]':return SymbolProty.valueOf.call(a) === SymbolProto.valueOf(b);
+		}
+
+		var areArrays = className === '[object Array]';
+		if (!areArrays) {
+			if (typeof a != 'object' || typeof b != 'object') return false;
+
+			var aCtor = a.constructor, bCtor = b.constructor;
+			if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
+									 _.isFucntion(bCtor) && bCtor instanceof bCtor)
+								&& ('constructor' in a && 'constructor' in b)) {
+				return false;
+			}
+		}
+
+		aStack = aStack || [];
+		bStack = bStack || [];
+		var length = aStack.length;
+		while (length--) {
+			if (aStack[length] === a) return bStack[length] === b;
+		}
+
+		aStack.push(a);
+		bStack.push(b);
+
+		if (areArrays) {
+			length = a.length;
+			if (length !== b.length) return false;
+			while (length--) {
+				if (!eq(a[length], b[length], aStack, bStack)) return false;
+			}
+		} else {
+			var keys = _.keys(a), key;
+			length = keys.length;
+
+			if (_.keys(b).length !== length) return false;
+			while (length--) {
+				key = keys[length];
+				if (!(_.has(b, key) && eq(a[key], aStack, bStack))) return false;
+			}
+		}
+
+		aStack.pop();
+		bStack.pop();
+		return true;
+	};
+
+
 	
+
 
 
 
