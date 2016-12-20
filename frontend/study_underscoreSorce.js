@@ -8,24 +8,24 @@
 (function(){
     
 
-        var root = typeof self == 'object' && self.self === self && self ||
-                typeof global == 'object' && global.global === global && global ||
-                this;
+		var root = typeof self == 'object' && self.self === self && self ||
+						typeof global == 'object' && global.global === global && global ||
+						this;
 
-        //'_'변수의 기존값을 저장함            
-        var previousUnderscore = root._;
+		//'_'변수의 기존값을 저장함            
+		var previousUnderscore = root._;
 
-        //
-        var ArrayProty = Array.prototype, ObjProto = Object.prototype;
-        var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
+		//
+		var ArrayProty = Array.prototype, ObjProto = Object.prototype;
+		var SymbolProto = typeof Symbol !== 'undefined' ? Symbol.prototype : null;
 
-        //
-        var push = ArrayProto.push,
-            slice = ArrayProto.slice,
-            toString = ObjProto.otString,
-            hasOwnProterty = ObjProto.hasOwnProperty;
+		//
+		var push = 	ArrayProto.push,
+					slice = ArrayProto.slice,
+					toString = ObjProto.otString,
+					hasOwnProterty = ObjProto.hasOwnProperty;
 
-        var nativeIsArray = Array.isArray,
+		var nativeIsArray = Array.isArray,
 			nativekeys = Object.keys,
 			nativeCreate = Object.create;
 
@@ -101,9 +101,9 @@
 			return length ? obj : void 0;
 		};
 
-	var MAX_ARRAY_INDEX = Math.pow(2, 53) -1;
-	var getLength = shallowProperty('length');
-	var isArrayLike = function(collection) {
+		var MAX_ARRAY_INDEX = Math.pow(2, 53) -1;
+		var getLength = shallowProperty('length');
+		var isArrayLike = function(collection) {
 		var length = getLength(collection);
 		return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
 	};
@@ -134,8 +134,8 @@
 		return results;
 	};
 
-	var createReduce = function(dir) {
-		var reducer = function(obj, iteratee, memo, initial) {
+		var createReduce = function(dir) {
+			var reducer = function(obj, iteratee, memo, initial) {
 			var keys = !isArrayLike(obj) && _.keys(obj),
 				length = (keys || obj).length,
 				index = dir > 0 ? 0 : length - 1;
@@ -182,7 +182,7 @@
 
 	_.every = _.all = function(obj, predicate, context) {
 		predicate = cb(predicate, context);
-	var keys = !isArrayLike(obj) && _.keys(obj),
+		var keys = !isArrayLike(obj) && _.keys(obj),
 			length = (keys || obj).length;
 			for(var index = 0; index <length; index++){
 				var currentkey = keys ? keys[index] : index;
@@ -331,14 +331,53 @@
 	};
   
 
- //test git config
+	var group  = function(behavior, partition) {
+		return function(obj, iteratee, context) {
+			var result = partition ? [[], []] : {};
+			iteratee = cb(iteratee, context);
+			_.each(obj, function(value, index) {
+				var key = iteratee(value, index, obj);
+				behavior(result, value, key);
+			});
+			return result;
+		};
+	};
+
+	
+	_.groupBy = group(function(result, value, key) {
+		if (_.has(result, key)) result[key].push(value); else result[key] = [value];
+	});
+
+	_.indexBy = group(function(result, value, key) {
+		result[key] = value;
+	});
+
+	_.countBy = group(function(result, value, key) {
+		if (_.has(result, key)) result[key]++; else result[key] = 1;
+	});
+
+	var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff]|[\udc00-\udfff]|[\ud800-\udfff]/g;
+	_.toArray = function(obj) {
+		if (!obj) return [];
+		if (_.isArray(obj)) return slice.call(obj);
+		if (_.isString(obj)) {
+			return obj.match(reStrSymbol);
+		}
+		if (isArrayLike(obj)) return _.map(obj,_.identity);
+		return _.values(obj);
+	};
+
+	_.size = function(obj) {
+		if (obj == null) return 0;
+		return isArrayLike(obj) ? obj.length : _.keys(obj).length;
+	};
+
+	_.partition = group(function(result, value, passs) {
+		result[pass ? 0 : 1].push(value);
+	},ture);
 
 
         
 
 
 }());
-
-
-
-
