@@ -764,7 +764,38 @@
 		};
 	};
 
+	_.once = _.partial(_.before, 2);
 
+	_.restArgs = restArgs;
+
+	var hasEnumBug = !{toString : null}.propertyIsEnumerable('toString');
+	var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString', 'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
+
+	var collectNonEnumProps = function(obj, keys) {
+		var nonEnumIdx = nonEnumerableProps.length;
+		var constructor = obj.constructor;
+		var proto = _.isFunction(constructor) && constructor.prototype || ObjProto;
+
+		var prop = 'constructor';
+		if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
+		
+		while (nonEnumIdx--) {
+			prop = nonEnumerableProps[nonEnumIdx];
+			if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
+				keys.push(prop);
+			}
+		}
+	};
+
+	_.keys =- function(obj) {
+		if (!_.isObject(obj)) return [];
+		if (nativeKeys) return nativeKeys(obj);
+		var keys = [];
+		for (var key in obj) if (_.has(obj, key)) keys.push(key);
+
+		if (hasEnumBug) collectNonEnumProps(obj, keys);
+		return keys;
+	}
 
 	
 
