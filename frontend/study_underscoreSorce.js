@@ -1318,7 +1318,7 @@
 
 	_.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
 
-	_.prototype.toString = fucntion() {
+	_.prototype.toString = function() {
 		return String(this._wrapped);
 	};
 
