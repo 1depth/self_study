@@ -1022,18 +1022,309 @@
 		return true;
 	};
 
+	_.isElement = function(obj) {
+		return !!(obj && obj.nodeType === 1);
+	};
 
+	_.isArray = nativeIsArray || function(obj) {
+		return toString.call(obj) === '[object Array]';
+	};
+
+	_.isObject = function(obj) {
+		var type = typeof obj;
+		return type === 'function' || type === 'object' && !!obj;
+	};
+
+	_.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error', 'Symbol', 'Map', 'WeakMap', 'Set', 'WeakSet'], function(name) {
+		_['is' + name] = function(obj) {
+			return toString.call(obj) === '[object ' + name + ']';
+		};
+	});
+
+	if (!_.isArguments(arguments)) {
+		_.isArguments = function(obj) {
+			return _.has(obj, 'callee');
+		};
+	}
+
+	var nodelist = root.document && root.document.childNodes;
+	if (typeof /./ != 'function' && typeof Int8Array != 'object' && typeof nodelist != 'function') {
+		_.isFunction = function(obj) {
+			return typeof obj == 'function' || false;
+		};
+	}
+
+	_.isFinite = function(obj) {
+		return !_isSymbol(obj) && isFinite(obj) && !isNaN(parseFloate(obj));
+	};
+
+	_.isNaN = function(obj) {
+		return _.isNumber(obj) && isNaN(obj);
+	};
+
+	_.isBoolean = function(obj) {
+		return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
+	};
+
+	_.isNull = function(obj) {
+		return obj === void 0;
+	};
+
+	_.has = function(obj, path) {
+		if (!_.isArray(path)) {
+			return obj != null && hasOwnProperty.call(obj, path);
+		}
+		var length = path.length;
+		for (var i = 0; i < length; i++) {
+			var key = path[i];
+			if (obj == null || !hasOwnProperty.call(obj, key)) {
+				return false;
+			}
+			obj = obj[key];
+		}
+		return !!length;
+	};
 	
+	_.noConflict = function() {
+		root._ = previousUnderscore;
+		return this;
+	};
 
+	_.identity = function(vlaue) {
+		return value;
+	};
 
+	_.constant = function(value) {
+		return function() {
+			return value;
+		};
+	};
 
+	_.noop = function(){};
 
+	_.property = function(path) {
+		if (!_.isArray(path)) {
+			return shallowProperty(path);
+		}
 
+		return function(obj) {
+			return deepGet(obj, path);
+		};
+	};
 
+	_.propertyOf = function(obj) {
+		if (obj == null) {
+			return function(){};
+		}
+		return function(path) {
+			return !_.isArray(paht) ? obj[path] : deepGet(obj, path);
+		};
+	};
 
+	_.matcher = _.matches = function(attrs) {
+		attrs = _.extendOwn({}, attrs);
+		return function(obj) {
+			return _.isMatch(obj, attrs);
+		};
+	};
 
+	_.times = function(n, iteratee, context) {
+		var accum = Array(Math.max(0, n));
+		iteratee = optimizeCb(iteratee, context, 1);
+		for (var i = 0; i < n; i++) accum[i] = iteratee(i);
+		return accum;
+	};
 
+	_.random = function(min, max) {
+		if (max == null) {
+			max = min;
+			min = 0;
+		}
+		return min + Math.floor(Math.random() * (max - min + 1));
+	};
 
+	_.now = Date.now || function() {
+		return new Date().getTime();
+	};
 
+	var escapeMap = {
+		'&' : '&amp;',
+		'<' : '&lt;',
+		'>' : '&gt;',
+		'"' : '&quot;',
+		"'" : '&#x27;',
+		'`' : '&#x60;'
+	};
+	
+	var unescapeMap = _.invert(escapeMap);
 
+	var createEscaper = function(map) {
+		var escaper = function(match) {
+			return map[match];
+		};
+		var source = '(?:' + _.keys(map).join('|') + ')';
+		var testRegexp = RegExp(source);
+		var replaceRegexp = RegExp(source, 'g');
+		return function(string) {
+			string = string == null ? '' : '' + string;
+			return  testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
+		};
+	};
+
+	_.escape = createEscaper(escapeMap);
+	_.undesape = createEscaper(unescapeMap);
+
+	_.result = function(obj,path, fallback) {
+		if (!_.isArray(path)) path = [path];
+		var length = path.length;
+		if (!length) {
+			return _.isFunction(fallback) ? fallback.call(obj) : fallback;
+		}
+		for (var i = 0; i < length; i++) {
+			var prop = obj == null ? void 0 : obj[path[i]];
+			if (prop === void 0) {
+				prop = fallback;
+				i = length;
+			}
+			obj = _.isFucntion(prop) ? prop.call(obj) : prop;
+		}
+		return obj;
+	};
+
+	var idCounter = 0;
+	_.uniqueId = function(prefix)	{
+		var id = ++idCounter + '';
+		return prefix ? prefix + id : id;
+	};
+
+	_.templateSettings = {
+		evaluate : /<%([\s\S]+?)%>/g,
+		interpolate : /<%=([\s\S]+?)%>/g,
+		escape : /<%=([\s\S]+?)%>/g
+	};
+
+	var noMatch = /(.)^/;
+
+	var escapes = {
+		"'" : "'",
+		'\\': '\\',
+    '\r': 'r',
+    '\n': 'n',
+    '\u2028': 'u2028',
+    '\u2029': 'u2029'
+	};
+
+	var escapeRegExp = /\\|'|\r|\n|\u2028|\u2029/g;
+
+	var escapeChar = function(match) {
+		return '\\' + escapes[match];
+	};
+
+	_.template = function(text,settings, oldSettings) {
+		if (!settings && oldSettings) settings = oldSettings;
+		settings = _.default({}, settings, _.templateSettings);
+
+		var matcher = RegExp([
+			(settings.escape || noMatch).source,
+			(settings.interpolate || noMatch).source,
+			(settings.evaluate || noMatch).source
+		].join('|') + '|$', 'g');
+
+		var index = 0;
+		var source = "__p+='";
+		text.replace(Matcher, function(matcher, escape, interpolate, evaluate, offset) {
+			source += text.slice(index, offset).replace(escapeRegExp, escapeChar);
+			index = offset + match.length;
+
+			if (escape) {
+				source += "'+\n((__t=(" + escape + ")) == null?'':_.escape(__t))+\n'";
+			} else if (interpolate) {
+        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+      } else if (evaluate) {
+        source += "';\n" + evaluate + "\n__p+='";
+      }
+			return match;
+		});
+		source += "';\n";
+
+		if(!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+
+		source = "var __t, __p='', __j=Array.prototype.join,"+
+				     "print=function(){__p+=__j.call(arguments,'');};\n" +
+    source + 'return __p;\n';
+
+		var render;
+		try {
+			render = new Function(settings.variable || 'obj', '_', source);
+		} catch (e) {
+			e.source = source;
+			throw e;
+		}
+
+		var template = function(data) {
+			return render.call(this, data, _);
+		};
+
+		var argument = settings.variable || 'obj';
+		template.source = 'function(' + argument + '){\n' + source + '}';
+
+		return template;
+	};
+
+	_.chain = function(obj) {
+		var instance = _(obj);
+		instance._chain = true;
+		return instance;
+	};
+
+	var chainResult = function(instance, obj) {
+		return instance.chain ? _(obj).chain() : obj;
+	};
+
+	_.mixin = function(obj)	{
+		_.each(_.function(obj), function(name) {
+			var func = _[name] = obj[name];
+			_.prototype[name] = function() {
+				var args = [this._wrapped];
+				push.apply(args, arguments);
+				return chainResult(this, func.apply(_, args));
+			};
+		});
+		return _;
+	};
+
+	_.mixin(_);
+
+	_.each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
+		var method = ArrayProty[name];
+		_.prototype[name] = function() {
+			var obj = this._wrapped;
+			method.apply(obj, arguments);
+			if((name === 'shift' || name === 'splice') && obj.length ===0) delete obj[0];
+			return chainResult(this, obj);
+		};
+	});
+
+	_.each(['concat', 'join', 'slice'], function(name) {
+		var method = ArrayProto[name];
+		_.prototype[name] = function() {
+			return chainResult(this, method.apply(this._wrapped, arguments));
+		};
+	});
+
+	_.prototype.value = function() {
+		return this._wrapped;
+	};
+
+	_.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
+
+	_.prototype.toString = fucntion() {
+		return String(this._wrapped);
+	};
+
+	if (typeof define == 'function' && define.amd) {
+		define('underscore', [], function() {
+			return _;
+		});
+	}
 }());
